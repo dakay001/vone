@@ -1,0 +1,57 @@
+{
+    "https://imlcc-physicians.powerappsportals.com/*": {
+      "NPI": "#your_css_selector_here",
+      "FirstName": "#your_css_selector_here",
+      "LastName": "#your_css_selector_here",
+      "DOB": "#your_css_selector_here",
+      "MedicalSchoolName": "#your_css_selector_here",
+      "DateDegreeIssued": "#your_css_selector_here",
+      "MedicalDegree": "#your_css_selector_here",
+      "ExamPassed": "#your_css_selector_here",
+      "ResidencyProgram": "#your_css_selector_here",
+      "ResidencyCompletionDate": "#your_css_selector_here",
+      "ResidencySpecialty": "#your_css_selector_here",
+      "HomeAddress": "#your_css_selector_here",
+      "HomeAddress2": "#your_css_selector_here",
+      "Home_City": "#your_css_selector_here",
+      "Home_State": "#your_css_selector_here",
+      "Home_Zip": "#your_css_selector_here",
+      "Phone": "#your_css_selector_here"
+    },
+    "https://nsbme.us.thentiacloud.net/webs/nsbme/application/*" : {
+      "NPI": "#your_css_selector_here",
+      "FirstName": "input[name='or_registrant_first_name']",
+      "LastName": "input[name='or_registrant_last_name']",
+      "DOB": "input[name='or_birth_date']",
+      "MedicalSchoolName": "#your_css_selector_here",
+      "DateDegreeIssued": "#your_css_selector_here",
+      "MedicalDegree": "#your_css_selector_here",
+      "ExamPassed": "#your_css_selector_here",
+      "ResidencyProgram": "#your_css_selector_here",
+      "ResidencyCompletionDate": "#your_css_selector_here",
+      "ResidencySpecialty": "#your_css_selector_here",
+      "HomeAddress": "input[name='or_home_street1']",
+      "HomeAddress2": "input[name='or_home_street2']",
+      "Home_City": "input[name='or_home_city']",
+      "Home_State": "input[name='or_home_state']",
+      "Home_Zip": "input[name='or_home_zip']",
+      "Phone": [
+        "input[name='or_telephone4']", "input[name='or_telephone1']"
+      ],
+      "Gender": [
+        "select[ng-model='model.genderId'][data-role=\"dropdownlist\"]",
+        "select[name='or_genderid']"
+        ],
+      "SSN": "input[name='or_social_number']",
+      "HairColor": "input[name='or_hair_color']",
+      "EyeColor": "input[name='or_eye_color']",
+      "Height": "input[name='or_height']",
+      "Weight": "input[name='or_weight']",
+      "HomeCountry": [
+        "select[ng-model='model.homeCountryId'][data-role=\"dropdownlist\"]",
+        "select[name='homeCountryId']"
+      ],
+      "DifferentAddress": "input[name='or_residential_different_mailing_address']",
+      "BirthPlace": "input[name='or_birth_city']"
+    }
+  }

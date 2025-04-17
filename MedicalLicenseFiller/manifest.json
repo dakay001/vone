@@ -1,0 +1,44 @@
+{
+    "manifest_version": 3,
+    "name": "LicenseAssist",
+    "version": "0.1.0",
+    "description": "Semi-automates filling medical license applications using data from a Google Sheet.",
+    "permissions": [
+      "storage",        
+      "activeTab",       
+      "scripting",       
+      "identity"        
+    ],
+    "host_permissions": [
+            "https://imlcc-physicians.powerappsportals.com/*",    
+            "https://nsbme.us.thentiacloud.net/webs/nsbme/application/*" 
+    ],
+    "background": {
+      "service_worker": "background.js" 
+    },
+    "action": {
+      "default_popup": "popup.html", 
+      "default_icon": {              
+        "16": "images/icon16.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+      }
+    },
+    "oauth2": {
+      "client_id": "280827936983-bioij0k6ldjm1bqq262bq59fv0na9393.apps.googleusercontent.com", 
+      "scopes": [
+        "https://www.googleapis.com/auth/spreadsheets.readonly" 
+      ]
+    },
+    "icons": {                       
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": ["mapping.json"], 
+        "matches": ["<all_urls>"]      
+      }
+    ]
+  }

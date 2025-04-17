@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LicenseAssist</title>
+  <style>
+    /* Base typography & spacing */
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 360px;
+      padding: 16px;
+      font-size: 14px;
+      background-color: #f4f6f8;
+      color: #333;
+    }
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .logo {
+      width: 32px;
+      height: 32px;
+      margin-right: 8px;
+    }
+    /* Layout rows */
+    .input-row,
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: background-color 0.2s;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+    .icon {
+      font-size: 16px;
+    }
+    /* Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-top: 2px solid rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    .hidden { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Data display panel */
+    #dataDisplay {
+      margin-bottom: 12px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 12px;
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    #dataDisplay .field {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #eee;
+    }
+    #dataDisplay .field:last-child { border-bottom: none; }
+    /* Status bar */
+    #statusMessage {
+      font-weight: 500;
+      padding: 6px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .status-error { background: #ffd2d2; color: #d8000c; }
+    .status-success { background: #dff2bf; color: #4f8a10; }
+    .status-info { background: #bde5f8; color: #00529b; }
+    /* Collapsible error log */
+    details {
+      background: #fff5f5;
+      border: 1px solid #ffbaba;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 13px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+      margin-bottom: 6px;
+      list-style: none;
+    }
+    details[open] summary::after {
+      content: '▲';
+      float: right;
+    }
+    summary::after {
+      content: '▼';
+      float: right;
+    }
+    #errorList {
+      margin: 0;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="images/icon48.png" alt="LicenseAssist" class="logo">
+    <h3>LicenseAssist</h3>
+  </header>
+
+  <div class="input-row">
+    <input type="text" id="physicianNpi" placeholder="Enter 10-digit NPI" maxlength="10">
+    <button id="findPhysician"><span class="icon">🔍</span>Find</button>
+  </div>
+
+  <div id="dataDisplay">
+    <p id="statusMessage" class="status-info">Enter NPI and click ‘Find’.</p>
+  </div>
+
+  <div class="action-row">
+    <button id="fillForm" disabled>
+      <span class="spinner hidden"></span>
+      Fill Form
+    </button>
+  </div>
+
+  <details id="errorLogDisplay">
+    <summary>Filling Issues on Last Attempt</summary>
+    <ul id="errorList"></ul>
+  </details>
+
+  <script src="popup.js"></script>
+</body>
+</html>
