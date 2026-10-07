@@ -1,15 +1,21 @@
 // Content script running on target pages
-console.log("LicenseAssist Content Script Loaded:", window.location.href);
+console.log("LicenseAssist Content Script Loaded.");
 
 let siteMapping = null;
 
 // Load field mappings
 async function loadMappings() {
+  // Only locally assigned stage names and numeric HTTP status reach the console.
+  let stage = 'fetch';
+  let status = null;
   try {
     const mappingUrl = chrome.runtime.getURL('mapping.json');
     const resp = await fetch(mappingUrl);
-    if (!resp.ok) throw new Error(`Mapping fetch failed: ${resp.statusText}`);
+    status = resp.status;
+    if (!resp.ok) throw new Error('Mapping fetch failed.');
+    stage = 'parse';
     const all = await resp.json();
+    stage = 'match';
     const url = window.location.href;
 
     siteMapping = Object.entries(all)
@@ -22,7 +28,7 @@ async function loadMappings() {
 
     console.log(siteMapping ? "Mappings loaded" : "No mappings for this URL");
   } catch (e) {
-    console.error("Error loading mappings:", e);
+    console.error("Error loading mappings. Check mapping.json and URL patterns.", { stage, status });
     siteMapping = null;
   }
 }
@@ -63,7 +69,11 @@ chrome.runtime.onMessage.addListener((msg, _, send) => {
     }
 
     const result = fillFieldsOnPage(currentPhysicianData, siteMapping);
-    console.log("Fill result:", result);
+    // Issue messages can contain provider values echoed by form controls.
+    console.log("Form fill completed. Inspect field issues in the popup for details.", {
+      filledCount: result.filledCount,
+      issueCount: result.issues.length
+    });
     send({ status: 'success', ...result });
   });
 
@@ -210,7 +220,7 @@ function fillSingle(el, val, field) {
       dispatchEvents(el);
       return;
     }
-    console.warn(`No Kendo widget for ${field}, falling back`);
+    console.warn("No Kendo widget available; falling back to native select.");
   }
 
   // Fallback for native <select>

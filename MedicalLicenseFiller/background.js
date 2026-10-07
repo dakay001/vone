@@ -18,6 +18,8 @@ const COLUMN_MAP = {
 };
 // --- End of Google Sheet structure constants ---
 
+// Console diagnostics must contain only fixed messages, counts, or HTTP status codes.
+// Never log provider data, identifiers, URLs, tokens, response bodies, or raw errors.
 const MAX_ERROR_LOG_SIZE = 100; // Limit how many errors are stored locally
 
 // --- Listen for messages sent from other parts of the extension (like popup.js) ---
@@ -25,14 +27,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // --- Handle Request to Fetch Data ---
     if (message.action === "fetchData") {
         const npiToFind = message.npi; // Get the NPI sent from the popup
-        console.log("Background: Received request to fetch data for NPI:", npiToFind);
+        console.log("Background: Received data fetch request.");
 
         // Use Chrome's Identity API to get an authentication token for the logged-in Google user
         // 'interactive: true' means it will prompt the user to log in/consent if needed the first time
         chrome.identity.getAuthToken({ interactive: true }, (token) => {
             // Check if getting the token failed
             if (chrome.runtime.lastError || !token) {
-                console.error("Background: Auth Error:", chrome.runtime.lastError);
+                console.error("Background: Authentication failed. Check Google sign-in and Sheet access.");
                 // Send an error response back to the popup
                 sendResponse({ error: `Google Authentication failed: ${chrome.runtime.lastError?.message || 'Unknown reason. Ensure you are logged into Chrome with a Google account that has access to the Sheet.'}` });
                 return; // Stop processing this request
@@ -42,12 +44,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             fetchPhysicianData(token, npiToFind)
                 .then(data => {
                     // Success! Send the fetched data back to the popup
-                    console.log("Background: Data fetched successfully for NPI:", npiToFind);
+                    console.log("Background: Data fetch completed.");
                     sendResponse({ data: data });
                 })
                 .catch(error => {
                     // An error occurred during the Sheets API call
-                    console.error("Background: Fetch Error for NPI", npiToFind, ":", error);
+                    console.error("Background: Data fetch failed. Check preceding fetch or mapping diagnostics.");
                     // Send an error response back to the popup
                     sendResponse({ error: error.message || "Failed to fetch data from Google Sheet." });
                 });
@@ -60,7 +62,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // --- Handle Request to Log an Error ---
     else if (message.action === "logError") {
         const errorToLog = message.error;
-        console.log("Background: Received request to log error:", errorToLog);
+        console.log("Background: Received error-log request.");
         // Get the current error log from storage (or an empty array if none exists)
         chrome.storage.local.get({ errorLog: [] }, (result) => {
             let log = result.errorLog;
@@ -74,7 +76,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // Save the updated log back to storage
             chrome.storage.local.set({ errorLog: log }, () => {
                 if (chrome.runtime.lastError) {
-                     console.error("Background: Error saving error log:", chrome.runtime.lastError);
+                     console.error("Background: Error saving error log. Check extension storage availability.");
                 } else {
                      console.log("Background: Error logged.");
                      // You could optionally send a response back, but it's not usually needed for logging
@@ -101,29 +103,39 @@ async function fetchPhysicianData(authToken, npiToFind) {
     // Add the ranges as query parameters
     const requestUrl = `${apiUrl}?ranges=${encodeURIComponent(npiSearchRange)}&ranges=${encodeURIComponent(dataFetchRange)}&majorDimension=ROWS`;
 
-    console.log("Background: Calling Sheets API URL:", requestUrl); // For debugging
+    console.log("Background: Calling Sheets API.");
 
     // Make the authenticated request to the Google Sheets API
-    const response = await fetch(requestUrl, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${authToken}` // Include the user's auth token
-        }
-    });
+    let response;
+    try {
+        response = await fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}` // Include the user's auth token
+            }
+        });
+    } catch (error) {
+        console.error("Background: Sheets network request failed. Check connectivity and retry.");
+        throw error;
+    }
 
     // Check if the API request itself failed (e.g., network error, invalid permissions)
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})); // Try to get error details from response body
-        console.error("Background: Google Sheets API error response:", response.status, response.statusText, errorData);
-        throw new Error(`Google Sheets API Error: ${response.status} ${response.statusText}. Check Spreadsheet ID, Sheet Name, and permissions.`);
+        console.error("Background: Sheets API request failed. Check configuration, permissions, or quota.", { status: response.status });
+        throw new Error(`Google Sheets API Error: ${response.status}. Check Spreadsheet ID, Sheet Name, and permissions.`);
     }
 
     // Parse the successful JSON response from the API
-    const batchData = await response.json();
-    // console.log("Background: API Raw Response:", batchData); // For intense debugging
+    let batchData;
+    try {
+        batchData = await response.json();
+    } catch (error) {
+        console.error("Background: Sheets response JSON parsing failed. Retry the request.");
+        throw error;
+    }
 
     // Basic validation of the response structure
-    if (!batchData.valueRanges || batchData.valueRanges.length < 2 || !batchData.valueRanges[0].values || !batchData.valueRanges[1].values) {
+    if (!Array.isArray(batchData?.valueRanges) || batchData.valueRanges.length < 2 || !Array.isArray(batchData.valueRanges[0]?.values) || !Array.isArray(batchData.valueRanges[1]?.values)) {
         console.warn("Background: NPI column or Data range appears empty in the sheet, or API response format unexpected.");
         // It's possible the sheet is just empty, which isn't strictly an error, but means no data found.
         return null; // Return null to indicate not found (sheet might be empty)
@@ -144,17 +156,16 @@ async function fetchPhysicianData(authToken, npiToFind) {
 
     // If the loop finishes and foundRowIndex is still -1, the NPI was not in the sheet
     if (foundRowIndex === -1) {
-        console.log(`Background: NPI "${npiToFind}" not found in column ${NPI_COLUMN_LETTER}.`);
+        console.log("Background: No matching provider found in the configured NPI column.");
         return null; // Return null to indicate NPI not found
     }
 
-    console.log(`Background: NPI found at row index: ${foundRowIndex}`);
+    console.log("Background: Matching provider row found.");
 
     // Get the specific row of data corresponding to the found NPI
     const physicianRow = allRowData[foundRowIndex];
-    if (!physicianRow) {
-        // This case is unlikely if NPI was found, but good to check
-        console.error(`Background: Data row not found at index ${foundRowIndex}, although NPI was found. Sheet data inconsistency?`);
+    if (!Array.isArray(physicianRow)) {
+        console.error("Background: Provider mapping failed: matched data row is missing or invalid. Check Sheet range alignment.");
         return null;
     }
 
@@ -181,7 +192,7 @@ async function fetchPhysicianData(authToken, npiToFind) {
         physicianData[fieldName] = rawValue || '';
     }
 
-    console.log("Background: Mapped physician data:", physicianData); // For debugging
+    console.log("Background: Provider mapping completed.", { fieldCount: Object.keys(physicianData).length });
     return physicianData; // Return the structured data object
 }
 
@@ -190,7 +201,7 @@ console.log("Background service worker started successfully.");
 
 // Optional: Add a listener for when the extension is first installed or updated
 chrome.runtime.onInstalled.addListener(details => {
-    console.log(`Extension installed or updated. Reason: ${details.reason}`);
+    console.log("Extension installed or updated.");
     // You could potentially clear old error logs on update if desired:
     // if (details.reason === 'update') {
     //    chrome.storage.local.remove('errorLog', () => console.log('Cleared old error log on update.'));
