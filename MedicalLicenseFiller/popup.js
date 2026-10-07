@@ -54,12 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1) Inject content script
         chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] }, injectionResults => {
           if (chrome.runtime.lastError) {
-            console.error('Injection failed:', chrome.runtime.lastError.message);
+            console.error('Content script injection failed. Check page access and refresh the tab.');
             updateStatus(`Injection failed: ${chrome.runtime.lastError.message}`, 'error');
             logPersistentError('Injection Error', chrome.runtime.lastError.message, tabs[0].url);
             return;
           }
-          console.log('✅ contentScript.js injected:', injectionResults);
+          console.log('Content script injected.');
   
           // 2) Send fillForm message
           chrome.tabs.sendMessage(tabId, { action: 'fillForm' }, response => {
